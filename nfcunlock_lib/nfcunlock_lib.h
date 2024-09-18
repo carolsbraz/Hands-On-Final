@@ -16,7 +16,7 @@ namespace devtitans::smartlamp {       // Pacote Smartlamp
 class Smartlamp {
    public:
        /**
-        * Verifica se o diretório /sys/kernel/smartlamp existe. Se existir
+        * Verifica se o diretório /sys/kernel/nfcunlock existe. Se existir
         * o dispositivo SmartLamp está conectado via USB. Caso contrário,
         * verifica a propriedade devtitans.smartlamp.allow_simulated
         * para ver se valores simulados podem ser usados.
@@ -53,7 +53,7 @@ class Smartlamp {
    private:
        /**
         * Métodos para ler e escrever valores nos arquivos "led",
-        * "ldr" ou "threshold" do diretório /sys/kernel/smartlamp.
+        * "ldr" ou "threshold" do diretório /sys/kernel/nfcunlock.
         */
        int readFileValue(string file);
        bool writeFileValue(string file, int value);
