@@ -1,0 +1,4 @@
+# Define o rótulo do daemon smartlamp
+/vendor/bin/hw/devtitans.nfcunlock-service  u:object_r:nfcunlock_daemon_exec:s0
+# Linha em branco para evitar erro de compilação
+        
