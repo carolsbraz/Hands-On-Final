@@ -10,10 +10,10 @@
 using namespace std;                   // Permite usar string diretamente ao invés de std::string
 
 
-namespace devtitans::smartlamp {       // Pacote Smartlamp
+namespace devtitans::nfcunlock {       // Pacote Smartlamp
 
 
-class Smartlamp {
+class Nfcunlock {
    public:
        /**
         * Verifica se o diretório /sys/kernel/nfcunlock existe. Se existir

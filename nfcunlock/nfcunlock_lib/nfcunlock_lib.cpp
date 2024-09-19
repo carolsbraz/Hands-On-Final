@@ -8,7 +8,7 @@ using namespace android::base;                         // Permite usar GetBoolPr
 namespace devtitans::nfcunlock {                       // Entra no pacote devtitans::nfcunlock
 
 
-int nfcunlock::connect() {
+int Nfcunlock::connect() {
    char dirPath[] = "/sys/kernel/nfcunlock";
    struct stat dirStat;
    if (stat(dirPath, &dirStat) == 0)
@@ -17,13 +17,13 @@ int nfcunlock::connect() {
 
 
    // Diretório não existe, vamos verificar a propriedade
-   bool allowSimulated = GetBoolProperty("devtitans.nfcunlock.allow_simulated", true);
-   if (!allowSimulated)
-       return 0;                                      // Dispositivo não encontrado
+   //bool allowSimulated = GetBoolProperty("devtitans.nfcunlock.allow_simulated", true);
+   //if (!allowSimulated)
+   return 0;                                      // Dispositivo não encontrado
 }
 
 
-int nfcunlock::readFileValue(string file) {
+int Nfcunlock::readFileValue(string file) {
    int connected = this->connect();
 
 
@@ -46,7 +46,7 @@ int nfcunlock::readFileValue(string file) {
 }
 
 
-bool nfcunlock::writeFileValue(string file, int value) {
+bool Nfcunlock::writeFileValue(string file, int value) {
    int connected = this->connect();
 
 
@@ -68,7 +68,7 @@ bool nfcunlock::writeFileValue(string file, int value) {
 }
 
 
-int nfcunlock::getPass() {
+int Nfcunlock::getPass() {
    if(this->setTrigg(1)){
     sleep(30.0);
     return this->readFileValue("pass");
@@ -78,7 +78,7 @@ int nfcunlock::getPass() {
 }
 
 
-bool nfcunlock::setTrigg(int trigger) {
+bool Nfcunlock::setTrigg(int trigger) {
    return this->writeFileValue("trigg", trigger);
 }
 
