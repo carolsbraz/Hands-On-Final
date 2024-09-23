@@ -25,3 +25,6 @@ PRODUCT_PACKAGES += \
     hello_daemon_cpp
 
 BOARD_SEPOLICY_DIRS += device/devtitans/kraken/sepolicy
+
+# Manager
+PRODUCT_PACKAGES += devtitans.nfcunlockmanager
