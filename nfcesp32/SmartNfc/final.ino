@@ -33,7 +33,6 @@ void loop() {
         if (serialCommand == "GET_PASS") {
             readNFCFlag = true; // Ativa a leitura do NFC
             startTime = millis(); // Marca o tempo de início
-            Serial.println("Waiting for NFC card...");
         } else {
             Serial.println("ERR Unknown command.");
         }
@@ -81,7 +80,7 @@ void checkNFC() {
                 }
 
                 // Imprime o código com "PASS" e os primeiros 4 dígitos
-                Serial.println("PASS " + passCode);
+                Serial.println("PASS " + passCode + "\n");
 
                 // Desativa a leitura do NFC após o sucesso
                 readNFCFlag = false;
