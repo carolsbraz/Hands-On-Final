@@ -20,3 +20,6 @@ BOARD_SEPOLICY_DIRS += device/devtitans/nfcunlock/sepolicy
 
 # Manager
 PRODUCT_PACKAGES += devtitans.nfcunlockmanager
+
+# Cliente de Linha de Comando para o Serviço Smartlamp
+PRODUCT_PACKAGES += nfcunlock_service_client
