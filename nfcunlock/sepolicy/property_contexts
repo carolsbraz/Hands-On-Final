@@ -1,4 +1,4 @@
 # Define o rótulo da propriedade de sistema
-vendor.devtitans.nfcunlock.allow_simulated  u:object_r:vendor_nfcnlock_prop:s0
+vendor.devtitans.nfcunlock.allow_simulated  u:object_r:vendor_nfcunlock_prop:s0
 # Linha em branco para evitar erro de compilação
         

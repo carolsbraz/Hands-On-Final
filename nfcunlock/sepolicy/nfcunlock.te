@@ -10,7 +10,7 @@ init_daemon_domain(nfcunlock_daemon);                        # O daemon será in
 vndbinder_use(nfcunlock_daemon);                             # O daemon usará o binder
 allow nfcunlock_daemon servicemanager:binder { call transfer };
 
-add_service(nfcunlock_daemon, smartlamp_service)             # O daemon irá criar o serviço do smartlamp
+add_service(nfcunlock_daemon, nfcunlock_service)             # O daemon irá criar o serviço do smartlamp
 
 # Permite acesso aos arquivos do /sys
 allow nfcunlock_daemon sysfs:file { getattr open read write };
