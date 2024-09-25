@@ -5,12 +5,12 @@ import android.os.ServiceManager;
 import android.os.IBinder;
 import android.os.RemoteException;
 
-import devtitans.nfcunlock.INfcUnlock;                      // Criado pelo AIDL
+import devtitans.nfcunlock.INfcunlock;                      // Criado pelo AIDL
 
 public class NfcUnlockManager {
     private static final String TAG = "DevTITANS.NfcUnlockManager";
     private IBinder binder;
-    private INfcUnlock service;
+    private INfcunlock service;
 
     private static NfcUnlockManager instance;
 
@@ -19,9 +19,9 @@ public class NfcUnlockManager {
     private NfcUnlockManager() {
         Log.d(TAG, "Nova (única) instância do NfcUnlockManager ...");
 
-        binder = ServiceManager.getService("devtitans.nfcunlock.INfcUnlock/default");
+        binder = ServiceManager.getService("devtitans.nfcunlock.INfcunlock/default");
         if (binder != null) {
-            service = INfcUnlock.Stub.asInterface(binder);
+            service = INfcunlock.Stub.asInterface(binder);
             if (service != null)
                 Log.d(TAG, "Serviço nfcunlock acessado com sucesso.");
             else
@@ -38,11 +38,6 @@ public class NfcUnlockManager {
             instance = new NfcUnlockManager();
 
         return instance;
-    }
-
-    public int connect() throws RemoteException {
-        Log.d(TAG, "Executando método connect() ...");
-        return service.connect();
     }
 
     public int getPass() throws RemoteException {
