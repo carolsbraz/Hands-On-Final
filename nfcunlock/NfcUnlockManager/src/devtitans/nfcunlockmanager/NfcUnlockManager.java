@@ -54,8 +54,8 @@ public class NfcUnlockManager {
     // Método que deve ser chamado para buscar o pass de forma assíncrona
     public void fetchPass() throws RemoteException {
         Log.d(TAG, "Executando método fetchPass() ...");
-        int pass = service.getPass();  // Busca o pass do serviço
-        notifyPassListener(pass);      // Notifica o listener
+        int pass = service.getPass(); 
+        notifyPassListener(pass);     
     }
 
     public int connect() throws RemoteException {
@@ -63,7 +63,7 @@ public class NfcUnlockManager {
         return service.connect();
     }
 
-    // Interface do listener que será implementada pela Activity
+    // Interface do listener
     public interface PassListener {
         void onPassRead(int pass);
     }
