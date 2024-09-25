@@ -69,12 +69,7 @@ bool Nfcunlock::writeFileValue(string file, int value) {
 
 
 int Nfcunlock::getPass() {
-   if(this->setTrigg(1)){
-    sleep(30.0);
     return this->readFileValue("pass");
-   }
-
-    return 0;
 }
 
 
