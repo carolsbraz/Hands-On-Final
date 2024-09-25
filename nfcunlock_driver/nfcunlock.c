@@ -49,7 +49,6 @@ module_usb_driver(nfcunlock_driver);
 
 static int usb_write_serial(char *cmd, int param) {
     int ret, actual_size;
-    char resp_expected[MAX_RECV_LINE]; // Resposta esperada do comando
 
     // Armazena o comando em formato de texto que o firmware reconheça
     snprintf(usb_out_buffer, usb_max_size, "%s\n", cmd);
@@ -67,12 +66,10 @@ static int usb_write_serial(char *cmd, int param) {
     return 0;
 }
 
-static int usb_read_serial() {
+static int usb_read_serial(void) {
     int recv_size = 0;                      // Quantidade de caracteres no recv_line
     int ret, actual_size;
     int retries = 10;  // Tenta algumas vezes receber uma resposta da USB. Depois desiste.
-    int key = 0;
-    char *start_ptr;
     char resp_expected[MAX_RECV_LINE];      // Resposta esperada do comando
     char *resp_pos;                         // Posição na linha lida que contém o número retornado pelo dispositivo
     long resp_number = -1;                  // Número retornado pelo dispositivo (e.g., valor do led, valor do ldr)
