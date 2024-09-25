@@ -11,11 +11,11 @@ public class NfcUnlockManager {
     private static final String TAG = "DevTITANS.NfcUnlockManager";
     private IBinder binder;
     private INfcUnlock service;
+    private PassListener passListener;                      // Listener para o pass
 
     private static NfcUnlockManager instance;
 
-    // Construtor. Configura a "instância da classe" (objeto) recém-criada. 
-    // Note o "private" no construtor. Essa classe só pode ser instanciada dentro desse arquivo.
+    // Construtor. Configura a "instância da classe" (objeto) recém-criada.
     private NfcUnlockManager() {
         Log.d(TAG, "Nova (única) instância do NfcUnlockManager ...");
 
@@ -32,7 +32,6 @@ public class NfcUnlockManager {
     }
 
     // Acessa a (única) instância dessa classe. Se ela não existir ainda, cria.
-    // Note o "static" no método. Podemos executá-lo sem precisar instanciar um objeto.
     public static NfcUnlockManager getInstance() {
         if (instance == null)
             instance = new NfcUnlockManager();
@@ -40,13 +39,32 @@ public class NfcUnlockManager {
         return instance;
     }
 
+    // Método para registrar o listener que será chamado quando o pass for lido
+    public void setPassListener(PassListener listener) {
+        this.passListener = listener;
+    }
+
+    // Método chamado para notificar o listener quando o pass for lido
+    private void notifyPassListener(int pass) {
+        if (passListener != null) {
+            passListener.onPassRead(pass);
+        }
+    }
+
+    // Método que deve ser chamado para buscar o pass de forma assíncrona
+    public void fetchPass() throws RemoteException {
+        Log.d(TAG, "Executando método fetchPass() ...");
+        int pass = service.getPass();  // Busca o pass do serviço
+        notifyPassListener(pass);      // Notifica o listener
+    }
+
     public int connect() throws RemoteException {
         Log.d(TAG, "Executando método connect() ...");
         return service.connect();
     }
 
-    public int getPass() throws RemoteException {
-        Log.d(TAG, "Executando método getPass() ...");
-        return service.getPass();
+    // Interface do listener que será implementada pela Activity
+    public interface PassListener {
+        void onPassRead(int pass);
     }
 }
