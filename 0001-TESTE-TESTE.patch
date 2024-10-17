@@ -1,0 +1,35 @@
+From 10833df83c8974649050c074a838eb869f324ce2 Mon Sep 17 00:00:00 2001
+From: Vinicius Pereira <viniciusmatheusbpereira@gmail.com>
+Date: Wed, 16 Oct 2024 20:25:02 -0400
+Subject: [PATCH] TESTE TESTE
+
+Change-Id: I59902eaf002f3e30dfe1006f8ccc7121b17ae591
+---
+ .../com/android/internal/widget/LockscreenCredential.java     | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/core/java/com/android/internal/widget/LockscreenCredential.java b/core/java/com/android/internal/widget/LockscreenCredential.java
+index 03e7fd1c..503cef33 100644
+--- a/core/java/com/android/internal/widget/LockscreenCredential.java
++++ b/core/java/com/android/internal/widget/LockscreenCredential.java
+@@ -38,6 +38,9 @@ import java.security.NoSuchAlgorithmException;
+ import java.util.Arrays;
+ import java.util.List;
+ import java.util.Objects;
++import 	java.lang.String;
++
++import android.util.Log;
+ 
+ /**
+  * A class representing a lockscreen credential, also called a Lock Screen Knowledge Factor (LSKF).
+@@ -145,6 +148,7 @@ public class LockscreenCredential implements Parcelable, AutoCloseable {
+      * If the supplied password is empty, create an empty credential object.
+      */
+     public static LockscreenCredential createPinOrNone(@Nullable CharSequence pin) {
++        Log.e("VINICIUS", pin.toString());
+         if (TextUtils.isEmpty(pin)) {
+             return createNone();
+         } else {
+-- 
+2.34.1
+
