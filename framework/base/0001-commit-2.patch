@@ -1,0 +1,207 @@
+From 9a80c0a889eeee953aaf9a2d1b40c9dddb6244db Mon Sep 17 00:00:00 2001
+From: LnQueiroz <isabellequeiroz11.04@gmail.com>
+Date: Fri, 8 Nov 2024 20:36:15 -0400
+Subject: [PATCH] commit 2
+
+Change-Id: If2079b7833dbd05163e33a746c4218f64d6b6a33
+---
+ packages/SystemUI/AndroidManifest.xml         | 14 ++++
+ packages/SystemUI/res/xml/nfc_tech_filter.xml |  8 ++
+ .../keyguard/BasePasswordTextView.java        |  6 ++
+ .../KeyguardPinBasedInputViewController.java  | 81 +++++++++++++++++++
+ 4 files changed, 109 insertions(+)
+ create mode 100644 packages/SystemUI/res/xml/nfc_tech_filter.xml
+
+diff --git a/packages/SystemUI/AndroidManifest.xml b/packages/SystemUI/AndroidManifest.xml
+index 351cce09..a1eb2ae7 100644
+--- a/packages/SystemUI/AndroidManifest.xml
++++ b/packages/SystemUI/AndroidManifest.xml
+@@ -327,6 +327,8 @@
+ 
+     <!-- Permission to make accessibility service access Bubbles -->
+     <uses-permission android:name="android.permission.ADD_TRUSTED_DISPLAY" />
++    <uses-permission android:name="android.permission.NFC"/>
++    <uses-feature android:name="android.hardware.nfc" android:required="true"/>
+ 
+     <!-- Permission for Smartspace. -->
+     <uses-permission android:name="android.permission.MANAGE_SMARTSPACE" />
+@@ -385,6 +387,18 @@
+         android:directBootAware="true"
+         tools:replace="android:appComponentFactory"
+         android:appComponentFactory=".PhoneSystemUIAppComponentFactory">
++
++
++        <receiver android:name=".NfcPinReceiver"
++            android:exported="true">>
++               <intent-filter>
++                       <action android:name="android.nfc.action.TECH_DISCOVERED" />
++               </intent-filter>
++               <meta-data
++                   android:name="android.nfc.action.TECH_DISCOVERED"
++                   android:resource="@xml/nfc_tech_filter" />
++        </receiver>
++
+         <!-- Keep theme in sync with SystemUIApplication.onCreate().
+              Setting the theme on the application does not affect views inflated by services.
+              The application theme is set again from onCreate to take effect for those views. -->
+diff --git a/packages/SystemUI/res/xml/nfc_tech_filter.xml b/packages/SystemUI/res/xml/nfc_tech_filter.xml
+new file mode 100644
+index 00000000..9feaed5c
+--- /dev/null
++++ b/packages/SystemUI/res/xml/nfc_tech_filter.xml
+@@ -0,0 +1,8 @@
++ <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
++     <!-- capture all MIFARE Classics with NDEF payloads -->
++     <tech-list>
++         <tech>android.nfc.tech.NfcA</tech>
++         <tech>android.nfc.tech.MifareClassic</tech>
++         <tech>android.nfc.tech.Ndef</tech>
++     </tech-list>
++ </resources>
+diff --git a/packages/SystemUI/shared/keyguard/src/com/android/keyguard/BasePasswordTextView.java b/packages/SystemUI/shared/keyguard/src/com/android/keyguard/BasePasswordTextView.java
+index fe121340..a917489b 100644
+--- a/packages/SystemUI/shared/keyguard/src/com/android/keyguard/BasePasswordTextView.java
++++ b/packages/SystemUI/shared/keyguard/src/com/android/keyguard/BasePasswordTextView.java
+@@ -131,6 +131,12 @@ public abstract class BasePasswordTextView extends FrameLayout {
+         return mText;
+     }
+ 
++    /** Gets entered PIN text */
++    public void setText(String string) {
++        mText = string;
++        return;
++    }
++
+     /** Gets a transformed text for accessibility event. Called before text changed. */
+     protected CharSequence getTransformedText() {
+         return String.valueOf(DOT).repeat(mText.length());
+diff --git a/packages/SystemUI/src/com/android/keyguard/KeyguardPinBasedInputViewController.java b/packages/SystemUI/src/com/android/keyguard/KeyguardPinBasedInputViewController.java
+index 10d1891c..aae6581e 100644
+--- a/packages/SystemUI/src/com/android/keyguard/KeyguardPinBasedInputViewController.java
++++ b/packages/SystemUI/src/com/android/keyguard/KeyguardPinBasedInputViewController.java
+@@ -16,6 +16,12 @@
+ 
+ package com.android.keyguard;
+ 
++import android.content.BroadcastReceiver;
++import android.content.Context;
++import android.content.Intent;
++import android.content.IntentFilter;
++import android.util.Log;
++
+ import static com.android.systemui.Flags.pinInputFieldStyledFocusState;
+ import static com.android.systemui.util.kotlin.JavaAdapterKt.collectFlow;
+ 
+@@ -39,6 +45,11 @@ import com.android.systemui.flags.FeatureFlags;
+ import com.android.systemui.res.R;
+ import com.android.systemui.user.domain.interactor.SelectedUserInteractor;
+ 
++import android.nfc.NfcAdapter;
++import android.nfc.tech.MifareClassic;
++import android.nfc.Tag;
++import java.io.IOException;
++
+ public abstract class KeyguardPinBasedInputViewController<T extends KeyguardPinBasedInputView>
+         extends KeyguardAbsKeyInputViewController<T> {
+ 
+@@ -47,6 +58,8 @@ public abstract class KeyguardPinBasedInputViewController<T extends KeyguardPinB
+     private final KeyguardKeyboardInteractor mKeyguardKeyboardInteractor;
+     protected PasswordTextView mPasswordEntry;
+ 
++    private NfcAdapter nfcAdapter;
++
+     private final OnKeyListener mOnKeyListener = (v, keyCode, event) -> {
+         if (event.getAction() == KeyEvent.ACTION_DOWN) {
+             return mView.onKeyDown(keyCode, event);
+@@ -64,6 +77,67 @@ public abstract class KeyguardPinBasedInputViewController<T extends KeyguardPinB
+         return false;
+     };
+ 
++
++    private String bytesToHex(byte[] bytes) {
++        StringBuilder sb = new StringBuilder();
++        for (byte b : bytes) {
++            sb.append(String.format("%02X ", b));
++        }
++        return sb.toString();
++    }
++
++    // NFC BroadcastReceiver
++    private final BroadcastReceiver mNfcReceiver = new BroadcastReceiver() {
++        @Override
++        public void onReceive(Context context, Intent intent) {
++            String action = intent.getAction();
++            if (action != null && action.equals("android.nfc.action.TECH_DISCOVERED")) {
++            Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
++            MifareClassic mfc = MifareClassic.get(tag);
++                try {
++                    mfc.connect();
++
++                    // Autenticar com a chave padrão para o setor correspondente ao bloco 4
++                    int sectorIndex = mfc.blockToSector(4);
++                    boolean authenticated = mfc.authenticateSectorWithKeyA(sectorIndex, MifareClassic.KEY_DEFAULT);
++                    if (authenticated) {
++                        Log.d("Teste", "Autenticação bem-sucedida no setor " + sectorIndex);
++
++                        // Ler o bloco 4
++                        byte[] data = mfc.readBlock(4);
++
++                        // Converter os bytes lidos em uma string
++                        String dataString = bytesToHex(data);
++
++                        // Exibir o conteúdo no TextView
++                        //nfcContentTextView.setText("Bloco 4: " + dataString);
++
++                        // Registrar o conteúdo lido
++                        Log.d("Teste", "Bloco 4 lido: " + dataString);
++                    } else {
++                        Log.e("Teste", "Falha na autenticação no setor " + sectorIndex);
++                  //      Toast.makeText(this, "Falha na autenticação do setor " + sectorIndex, Toast.LENGTH_SHORT).show();
++                    }
++                } catch (IOException e) {
++                    Log.e("Teste", "Erro ao conectar ou ler o tag", e);
++                    //Toast.makeText(this, "Erro ao ler o tag: " + e.getMessage(), Toast.LENGTH_SHORT).show();
++                } finally {
++                    if (mfc != null) {
++                        try {
++                            mfc.close();
++                        } catch (IOException e) {
++                            Log.e("Teste", "Erro ao fechar conexão com o tag", e);
++                        }
++                    }
++                }
++                //   mPasswordEntry.setText("1234");
++                Log.d("KeyguardNFC", "NFC tag detected");
++                verifyPasswordAndUnlock();
++                // Aqui você pode disparar logs ou realizar ações adicionais
++            }
++        }
++    };
++
+     protected KeyguardPinBasedInputViewController(T view,
+             KeyguardUpdateMonitor keyguardUpdateMonitor,
+             SecurityMode securityMode,
+@@ -84,6 +158,11 @@ public abstract class KeyguardPinBasedInputViewController<T extends KeyguardPinB
+         mFalsingCollector = falsingCollector;
+         mKeyguardKeyboardInteractor = keyguardKeyboardInteractor;
+         mPasswordEntry = mView.findViewById(mView.getPasswordTextViewId());
++
++        // Registrar o BroadcastReceiver para NFC
++        IntentFilter filter = new IntentFilter("android.nfc.action.TECH_DISCOVERED");
++        view.getContext().registerReceiver(mNfcReceiver, filter, Context.RECEIVER_EXPORTED);
++
+     }
+ 
+     @Override
+@@ -174,6 +253,8 @@ public abstract class KeyguardPinBasedInputViewController<T extends KeyguardPinB
+         for (NumPadKey button : mView.getButtons()) {
+             button.setOnTouchListener(null);
+         }
++        // Cancelar o registro do BroadcastReceiver ao desmontar a view
++        mView.getContext().unregisterReceiver(mNfcReceiver);
+     }
+ 
+     @Override
+-- 
+2.34.1
+
