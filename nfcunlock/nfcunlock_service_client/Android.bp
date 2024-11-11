@@ -1,9 +1,0 @@
-cc_binary {
-    name: "nfcunlock_service_client",
-    srcs: ["nfcunlock_service_client.cpp"],
-    vendor: true,
-    shared_libs: [
-        "libbinder_ndk",
-        "devtitans.nfcunlock-V1-ndk",
-    ]
-}

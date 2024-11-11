@@ -1,7 +1,0 @@
-<manifest version="1.0" type="device">
-    <hal format="aidl">
-        <name>devtitans.nfcunlock</name>
-        <version>1</version>
-        <fqname>INfcunlock/default</fqname>
-    </hal>
-</manifest>

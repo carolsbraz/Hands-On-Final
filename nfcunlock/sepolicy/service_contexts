@@ -1,4 +1,0 @@
-# Define o rótulo do serviço AIDL smartlamp
-devtitans.nfcunlock.INfcunlock/default  u:object_r:nfcunlock_service:s0
-# Linha em branco para evitar erro de compilação
-        

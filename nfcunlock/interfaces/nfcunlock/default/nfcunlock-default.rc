@@ -1,5 +1,0 @@
-service devtitans.nfcunlock-service /vendor/bin/hw/devtitans.nfcunlock-service
-        interface aidl devtitans.nfcunlock.INfcunlock/default
-        class hal
-        user root
-        group root
