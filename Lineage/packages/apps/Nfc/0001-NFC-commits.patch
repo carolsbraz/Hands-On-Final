@@ -1,0 +1,83 @@
+From e752b070272df83d136316a704a9db4eb38d0e05 Mon Sep 17 00:00:00 2001
+From: ViniciusPereira99 <viniciusmatheusbpereira@gmail.com>
+Date: Fri, 8 Nov 2024 17:54:57 -0400
+Subject: [PATCH 1/2] NFC commits
+
+Change-Id: I1426a360375cc665da74d9af2336ec9d745492d3
+---
+ nci/jni/NativeNfcManager.cpp           |  4 ++++
+ src/com/android/nfc/NfcDispatcher.java | 14 +++++++++++---
+ src/com/android/nfc/NfcService.java    |  2 +-
+ 3 files changed, 16 insertions(+), 4 deletions(-)
+
+diff --git a/nci/jni/NativeNfcManager.cpp b/nci/jni/NativeNfcManager.cpp
+index 2c6e7aa..e08cc08 100644
+--- a/nci/jni/NativeNfcManager.cpp
++++ b/nci/jni/NativeNfcManager.cpp
+@@ -1846,10 +1846,14 @@ static void nfcManager_doSetScreenState(JNIEnv* e, jobject o,
+ 
+   if (state == NFA_SCREEN_STATE_ON_LOCKED) {
+     // disable poll and enable listen on DH 0x00
++/*
+     discovry_param =
+         (screen_state_mask & NFA_SCREEN_POLLING_TAG_MASK)
+             ? (NCI_LISTEN_DH_NFCEE_ENABLE_MASK | NCI_POLLING_DH_ENABLE_MASK)
+             : (NCI_POLLING_DH_DISABLE_MASK | NCI_LISTEN_DH_NFCEE_ENABLE_MASK);
++*/
++    discovry_param =
++        NCI_LISTEN_DH_NFCEE_ENABLE_MASK | NCI_POLLING_DH_ENABLE_MASK;
+   }
+ 
+   if (state == NFA_SCREEN_STATE_ON_UNLOCKED) {
+diff --git a/src/com/android/nfc/NfcDispatcher.java b/src/com/android/nfc/NfcDispatcher.java
+index b11e08b..dced43e 100644
+--- a/src/com/android/nfc/NfcDispatcher.java
++++ b/src/com/android/nfc/NfcDispatcher.java
+@@ -534,12 +534,15 @@ class NfcDispatcher {
+         }
+ 
+         boolean screenUnlocked = false;
+-        if (!provisioningOnly &&
+-                mScreenStateHelper.checkScreenState() == ScreenStateHelper.SCREEN_STATE_ON_LOCKED) {
++        handleNfcUnlock(tag);
++
++/*        if (mScreenStateHelper.checkScreenState() == ScreenStateHelper.SCREEN_STATE_ON_LOCKED) {
+             screenUnlocked = handleNfcUnlock(tag);
++        }
+             if (!screenUnlocked)
+                 return DISPATCH_FAIL;
+         }
++*/
+ 
+         if (ndef != null) {
+             message = ndef.getCachedNdefMessage();
+@@ -637,7 +640,12 @@ class NfcDispatcher {
+     }
+ 
+     private boolean handleNfcUnlock(Tag tag) {
+-        return mNfcUnlockManager.tryUnlock(tag);
++        Log.i(TAG, "Sending broadcastttttt");
++        Intent intent = new Intent();
++        intent.setAction("android.nfc.action.TECH_DISCOVERED");
++        mContext.sendBroadcast(intent);
++
++        return true;//mNfcUnlockManager.tryUnlock(tag);
+     }
+ 
+     /**
+diff --git a/src/com/android/nfc/NfcService.java b/src/com/android/nfc/NfcService.java
+index a83806c..c6a5acf 100644
+--- a/src/com/android/nfc/NfcService.java
++++ b/src/com/android/nfc/NfcService.java
+@@ -229,7 +229,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback
+     static final int NFC_POLL_KOVIO = 0x20;
+ 
+     // minimum screen state that enables NFC polling
+-    static final int NFC_POLLING_MODE = ScreenStateHelper.SCREEN_STATE_ON_UNLOCKED;
++    static final int NFC_POLLING_MODE = ScreenStateHelper.SCREEN_STATE_ON_LOCKED;
+ 
+     // Time to wait for NFC controller to initialize before watchdog
+     // goes off. This time is chosen large, because firmware download
+-- 
+2.34.1
+

@@ -1,0 +1,152 @@
+From 75ee8b735ebcf2436c702fbbe9dfc5f3ad712573 Mon Sep 17 00:00:00 2001
+From: ViniciusPereira99 <viniciusmatheusbpereira@gmail.com>
+Date: Mon, 11 Nov 2024 11:30:38 -0400
+Subject: [PATCH 2/2] Passo 2 systemui AOSP
+
+Change-Id: Ie44b45424b6f595650d6a0fc6f0957f4771e775e
+---
+ core/api/current.txt                          |  1 +
+ .../app/admin/DevicePolicyManager.java        |  1 +
+ packages/SystemUI/Android.bp                  |  1 +
+ .../KeyguardPinBasedInputViewController.java  | 46 +++++++++++++++++++
+ .../android/keyguard/PasswordTextView.java    |  7 +++
+ 5 files changed, 56 insertions(+)
+
+diff --git a/core/api/current.txt b/core/api/current.txt
+index 288ab479c0fb..9592f9bc2bcb 100644
+--- a/core/api/current.txt
++++ b/core/api/current.txt
+@@ -8177,6 +8177,7 @@ package android.app.admin {
+     field public static final int PASSWORD_QUALITY_ALPHANUMERIC = 327680; // 0x50000
+     field public static final int PASSWORD_QUALITY_BIOMETRIC_WEAK = 32768; // 0x8000
+     field public static final int PASSWORD_QUALITY_COMPLEX = 393216; // 0x60000
++    field public static final int PASSWORD_QUALITY_NFCUNLOCK = 65537; // 0x10001
+     field public static final int PASSWORD_QUALITY_NUMERIC = 131072; // 0x20000
+     field public static final int PASSWORD_QUALITY_NUMERIC_COMPLEX = 196608; // 0x30000
+     field public static final int PASSWORD_QUALITY_SOMETHING = 65536; // 0x10000
+diff --git a/core/java/android/app/admin/DevicePolicyManager.java b/core/java/android/app/admin/DevicePolicyManager.java
+index 90d96160053c..7756ace17154 100644
+--- a/core/java/android/app/admin/DevicePolicyManager.java
++++ b/core/java/android/app/admin/DevicePolicyManager.java
+@@ -4350,6 +4350,7 @@ public class DevicePolicyManager {
+      * are ordered so that higher values are more restrictive.
+      */
+     public static final int PASSWORD_QUALITY_SOMETHING = 0x10000;
++    public static final int PASSWORD_QUALITY_NFCUNLOCK = 0x10001;
+ 
+     /**
+      * Constant for {@link #setPasswordQuality}: the user must have entered a
+diff --git a/packages/SystemUI/Android.bp b/packages/SystemUI/Android.bp
+index 07f7ecd112e4..d2e1d6e0bbf6 100644
+--- a/packages/SystemUI/Android.bp
++++ b/packages/SystemUI/Android.bp
+@@ -200,6 +200,7 @@ android_library {
+         "lottie",
+         "LowLightDreamLib",
+         "motion_tool_lib",
++        "devtitans.nfcunlockmanager",
+     ],
+     manifest: "AndroidManifest.xml",
+ 
+diff --git a/packages/SystemUI/src/com/android/keyguard/KeyguardPinBasedInputViewController.java b/packages/SystemUI/src/com/android/keyguard/KeyguardPinBasedInputViewController.java
+index 59cfd45f8f59..0002ab48d4ba 100644
+--- a/packages/SystemUI/src/com/android/keyguard/KeyguardPinBasedInputViewController.java
++++ b/packages/SystemUI/src/com/android/keyguard/KeyguardPinBasedInputViewController.java
+@@ -36,12 +36,19 @@ import com.android.systemui.R;
+ import com.android.systemui.classifier.FalsingCollector;
+ import com.android.systemui.flags.FeatureFlags;
+ 
++import devtitans.nfcunlockmanager.*;
++import android.os.AsyncTask;
++import android.os.RemoteException;
++import android.app.Activity;
++
+ public abstract class KeyguardPinBasedInputViewController<T extends KeyguardPinBasedInputView>
+         extends KeyguardAbsKeyInputViewController<T> {
+ 
+     private final LiftToActivateListener mLiftToActivateListener;
+     private final FalsingCollector mFalsingCollector;
+     protected PasswordTextView mPasswordEntry;
++    private Runnable handlerTask;
++    private FetchTask task;
+ 
+     private final OnKeyListener mOnKeyListener = (v, keyCode, event) -> {
+         if (event.getAction() == KeyEvent.ACTION_DOWN) {
+@@ -134,12 +141,14 @@ public abstract class KeyguardPinBasedInputViewController<T extends KeyguardPinB
+         if (okButton != null) {
+             okButton.setOnTouchListener(mActionButtonTouchListener);
+             okButton.setOnClickListener(v -> {
++//                task.cancel();
+                 if (mPasswordEntry.isEnabled()) {
+                     verifyPasswordAndUnlock();
+                 }
+             });
+             okButton.setOnHoverListener(mLiftToActivateListener);
+         }
++        new FetchTask().execute();
+     }
+ 
+     @Override
+@@ -182,4 +191,41 @@ public abstract class KeyguardPinBasedInputViewController<T extends KeyguardPinB
+     protected int getInitialMessageResId() {
+         return R.string.keyguard_enter_your_pin;
+     }
++
++    class FetchTask extends AsyncTask<Integer, Void, Void> {
++        int tmp;
++        @Override
++        protected Void doInBackground(Integer... params) {
++            NfcUnlockManager manager;
++            manager = NfcUnlockManager.getInstance();
++
++            try {
++                tmp = manager.fetchPass();
++            } catch (RemoteException e) {
++                throw new RuntimeException(e);
++            }
++            //MainActivity.onPassRead(tmp);
++            if(tmp > -1){
++/*                handlerTask = new Runnable() {
++                    @Override
++                    public void run() {
++                    mPasswordEntry.setText(Integer.toString(tmp));
++                    verifyPasswordAndUnlock();
++                    }
++                };
++                handlerTask.run();*/
++              //  okButton.performClick();
++            }
++            return null;
++        }
++        @Override
++        protected void onPostExecute(Void result) {
++        // Set title into TextView
++            mPasswordEntry.setText(Integer.toString(tmp));
++            verifyPasswordAndUnlock();
++        }
++
++
++    }
++
+ }
+diff --git a/packages/SystemUI/src/com/android/keyguard/PasswordTextView.java b/packages/SystemUI/src/com/android/keyguard/PasswordTextView.java
+index 8e8ee48aba83..1a8b533cacfd 100644
+--- a/packages/SystemUI/src/com/android/keyguard/PasswordTextView.java
++++ b/packages/SystemUI/src/com/android/keyguard/PasswordTextView.java
+@@ -312,6 +312,13 @@ public class PasswordTextView extends FrameLayout {
+         return mText;
+     }
+ 
++    /** Gets entered PIN text */
++    public void setText(String string) {
++        mText = string;
++        return;
++    }
++
++
+     private CharSequence getTransformedText() {
+         int textLength = mTextChars.size();
+         StringBuilder stringBuilder = new StringBuilder(textLength);
+-- 
+2.34.1
+

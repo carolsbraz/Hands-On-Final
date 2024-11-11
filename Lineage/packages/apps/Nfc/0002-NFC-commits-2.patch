@@ -1,0 +1,105 @@
+From e76fffbb20dd0355c27575d487bc31258667db1d Mon Sep 17 00:00:00 2001
+From: ViniciusPereira99 <viniciusmatheusbpereira@gmail.com>
+Date: Mon, 11 Nov 2024 11:37:54 -0400
+Subject: [PATCH 2/2] NFC commits 2
+
+Change-Id: Iec9d556fc2ae2854f3e6fef6be8bd252ff76df0b
+---
+ src/com/android/nfc/NfcDispatcher.java | 60 ++++++++++++++++++++++++--
+ 1 file changed, 57 insertions(+), 3 deletions(-)
+
+diff --git a/src/com/android/nfc/NfcDispatcher.java b/src/com/android/nfc/NfcDispatcher.java
+index dced43e..a43c916 100644
+--- a/src/com/android/nfc/NfcDispatcher.java
++++ b/src/com/android/nfc/NfcDispatcher.java
+@@ -77,6 +77,10 @@ import java.util.StringJoiner;
+ import java.util.concurrent.atomic.AtomicBoolean;
+ import java.util.stream.Collectors;
+ 
++import android.nfc.tech.MifareClassic;
++import java.io.IOException;
++
++
+ /**
+  * Dispatch of NFC events to start activities
+  */
+@@ -534,12 +538,12 @@ class NfcDispatcher {
+         }
+ 
+         boolean screenUnlocked = false;
+-        handleNfcUnlock(tag);
++  //      handleNfcUnlock(tag);
+ 
+-/*        if (mScreenStateHelper.checkScreenState() == ScreenStateHelper.SCREEN_STATE_ON_LOCKED) {
++        if (mScreenStateHelper.checkScreenState() == ScreenStateHelper.SCREEN_STATE_ON_LOCKED) {
+             screenUnlocked = handleNfcUnlock(tag);
+         }
+-            if (!screenUnlocked)
++/*            if (!screenUnlocked)
+                 return DISPATCH_FAIL;
+         }
+ */
+@@ -639,10 +643,60 @@ class NfcDispatcher {
+         return DISPATCH_FAIL;
+     }
+ 
++    private String bytesToHex(byte[] bytes) {
++        StringBuilder sb = new StringBuilder();
++        for (byte b : bytes) {
++            sb.append(String.format("%02X ", b));
++        }
++        return sb.toString();
++    }
++
+     private boolean handleNfcUnlock(Tag tag) {
+         Log.i(TAG, "Sending broadcastttttt");
+         Intent intent = new Intent();
+         intent.setAction("android.nfc.action.TECH_DISCOVERED");
++        //Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
++        MifareClassic mfc = MifareClassic.get(tag);
++                try {
++                    mfc.connect();
++
++                    // Autenticar com a chave padrão para o setor correspondente ao bloco 4
++                    int sectorIndex = mfc.blockToSector(4);
++                    boolean authenticated = mfc.authenticateSectorWithKeyA(sectorIndex, MifareClassic.KEY_DEFAULT);
++                    if (authenticated) {
++                        Log.d("Teste", "Autenticação bem-sucedida no setor " + sectorIndex);
++
++                        // Ler o bloco 4
++                        byte[] data = mfc.readBlock(4);
++
++                        // Converter os bytes lidos em uma string
++                        String dataString = bytesToHex(data);
++                        intent.putExtra("pass", dataString);
++
++                        // Exibir o conteúdo no TextView
++                        //nfcContentTextView.setText("Bloco 4: " + dataString);
++
++                        // Registrar o conteúdo lido
++                        Log.d("Teste", "Bloco 4 lido: " + dataString);
++                    } else {
++                        Log.e("Teste", "Falha na autenticação no setor " + sectorIndex);
++                  //      Toast.makeText(this, "Falha na autenticação do setor " + sectorIndex, Toast.LENGTH_SHORT).show();
++                    }
++                } catch (IOException e) {
++                    Log.e("Teste", "Erro ao conectar ou ler o tag", e);
++                    //Toast.makeText(this, "Erro ao ler o tag: " + e.getMessage(), Toast.LENGTH_SHORT).show();
++                } finally {
++                    if (mfc != null) {
++                        try {
++                            mfc.close();
++                        } catch (IOException e) {
++                            Log.e("Teste", "Erro ao fechar conexão com o tag", e);
++                        }
++                    }
++                }
++
++//        intent.putExtra("pass", datastring);
++        //intent.putExtra(NfcAdapter.EXTRA_ID, tag.getId());
+         mContext.sendBroadcast(intent);
+ 
+         return true;//mNfcUnlockManager.tryUnlock(tag);
+-- 
+2.34.1
+

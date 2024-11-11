@@ -1,0 +1,76 @@
+From ac23482d08875b196447ffb4b181d96182ddc67c Mon Sep 17 00:00:00 2001
+From: ViniciusPereira99 <viniciusmatheusbpereira@gmail.com>
+Date: Mon, 11 Nov 2024 11:35:19 -0400
+Subject: [PATCH 2/2] Passo 2 system ui Lineage
+
+Change-Id: Icf9d50d70005b0f052a14e684491b21a426d1e10
+---
+ packages/SystemUI/AndroidManifest.xml         |  3 +++
+ .../KeyguardPinBasedInputViewController.java  | 23 +++++++++++++++++--
+ 2 files changed, 24 insertions(+), 2 deletions(-)
+
+diff --git a/packages/SystemUI/AndroidManifest.xml b/packages/SystemUI/AndroidManifest.xml
+index b79534d0..738a82b3 100644
+--- a/packages/SystemUI/AndroidManifest.xml
++++ b/packages/SystemUI/AndroidManifest.xml
+@@ -23,6 +23,9 @@
+         xmlns:tools="http://schemas.android.com/tools"
+         coreApp="true">
+ 
++    <uses-permission android:name="android.permission.NFC"/>
++    <uses-feature android:name="android.hardware.nfc" android:required="true"/>
++
+     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+ 
+     <!-- Used to read wallpaper -->
+diff --git a/packages/SystemUI/src/com/android/keyguard/KeyguardPinBasedInputViewController.java b/packages/SystemUI/src/com/android/keyguard/KeyguardPinBasedInputViewController.java
+index 02a6436b..f3c8bc62 100644
+--- a/packages/SystemUI/src/com/android/keyguard/KeyguardPinBasedInputViewController.java
++++ b/packages/SystemUI/src/com/android/keyguard/KeyguardPinBasedInputViewController.java
+@@ -22,6 +22,11 @@ import android.content.Intent;
+ import android.content.IntentFilter;
+ import android.util.Log;
+ 
++import android.nfc.NfcAdapter;
++import android.nfc.tech.MifareClassic;
++import android.nfc.Tag;
++import java.io.IOException;
++
+ import static com.android.systemui.Flags.pinInputFieldStyledFocusState;
+ import static com.android.systemui.util.kotlin.JavaAdapterKt.collectFlow;
+ 
+@@ -53,6 +58,17 @@ public abstract class KeyguardPinBasedInputViewController<T extends KeyguardPinB
+     private final KeyguardKeyboardInteractor mKeyguardKeyboardInteractor;
+     protected PasswordTextView mPasswordEntry;
+ 
++    private NfcAdapter nfcAdapter;
++
++
++    private String bytesToHex(byte[] bytes) {
++        StringBuilder sb = new StringBuilder();
++        for (byte b : bytes) {
++            sb.append(String.format("%02X ", b));
++        }
++        return sb.toString();
++    }
++
+     private final OnKeyListener mOnKeyListener = (v, keyCode, event) -> {
+         if (event.getAction() == KeyEvent.ACTION_DOWN) {
+             return mView.onKeyDown(keyCode, event);
+@@ -76,8 +92,11 @@ public abstract class KeyguardPinBasedInputViewController<T extends KeyguardPinB
+         public void onReceive(Context context, Intent intent) {
+             String action = intent.getAction();
+             if (action != null && action.equals("android.nfc.action.TECH_DISCOVERED")) {
+-                mPasswordEntry.setText("1234");
+-                Log.d("KeyguardNFC", "NFC tag detected");
++                //mPasswordEntry.setText("1234");
++                //Log.d("KeyguardNFC", "NFC tag detected");
++                String pass = intent.getStringExtra("pass");
++                Log.d("KeyguardNFC", "NFC tag detected" + pass);
++                mPasswordEntry.setText(pass);
+                 verifyPasswordAndUnlock();
+                 // Aqui você pode disparar logs ou realizar ações adicionais
+             }
+-- 
+2.34.1
+
